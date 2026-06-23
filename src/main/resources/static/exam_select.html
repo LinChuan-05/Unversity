@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>选择考试科目</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f5f5f5; padding:20px; }
+        .exam-card { transition: transform .2s; }
+        .exam-card:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 class="text-center mb-4">请选择考试科目</h3>
+        <div id="subjectList" class="text-center">加载中...</div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    (async()=>{
+        const res=await $get('/api/exam/subjects');
+        if(res.code!==200||!res.data){document.getElementById('subjectList').innerHTML='<div class="alert alert-danger">加载失败</div>';return;}
+        let html='<div class="row g-4">';
+        res.data.forEach(e=>{
+            const remaining=e.remaining||0, canTake=remaining>0;
+            html+=`<div class="col-md-6 col-lg-4"><div class="card exam-card shadow-sm ${canTake?'':'bg-light text-muted'}">
+                <div class="card-body text-center">
+                    <h5 class="card-title">${e.name}</h5>
+                    <p class="mb-1 text-secondary">⏱ ${e.duration} 分钟 | 🔄 可考 ${e.maxAttempts||1} 次</p>
+                    <p class="mb-2">已用 <b>${e.taken||0}</b> 次 | 剩余 <b class="text-${remaining>0?'success':'danger'}">${remaining}</b> 次</p>
+                    ${canTake?`<a href="/myWeb/exam.html?examId=${e.examId}&duration=${e.duration}&name=${encodeURIComponent(e.name)}" class="btn btn-primary" target="right">进入考试</a>`
+                    :'<span class="badge bg-danger">次数已用完</span>'}
+                </div>
+            </div></div>`;
+        });
+        html+='</div>';document.getElementById('subjectList').innerHTML=html;
+    })();
+    </script>
+</body>
+</html>

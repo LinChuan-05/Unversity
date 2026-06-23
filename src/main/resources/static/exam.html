@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>在线考试</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f5f5f5; padding:20px; }
+        .timer { font-size:2rem; font-weight:700; }
+        .timer.warning { animation:blink .5s infinite; color:#dc3545; }
+        @keyframes blink { 50% { opacity:.3; } }
+        .question-card { margin-bottom:1.5rem; }
+        .question-card .card-header { font-weight:600; }
+        .option-label { display:block; padding:8px 12px; border:1px solid #dee2e6; border-radius:6px; cursor:pointer; transition:all .2s; }
+        .option-label:hover { background:#e7f1ff; border-color:#86b7fe; }
+        .option-label input { margin-right:8px; }
+        .card-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <h3 id="examName">在线考试</h3>
+            <div class="timer text-primary" id="timer">加载中...</div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <form id="examForm">
+                    <div id="examArea">加载中...</div>
+                    <div class="text-center mt-3">
+                        <button type="submit" class="btn btn-success btn-lg px-5" id="submitBtn">提交试卷</button>
+                        <button type="reset" class="btn btn-outline-secondary btn-lg ms-2">重做</button>
+                    </div>
+                </form>
+                <div id="scoreResult" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    let deadline=null, timerInterval=null;
+
+    (async()=>{
+        const p=new URLSearchParams(location.search);
+        const examId=p.get('examId'), examName=decodeURIComponent(p.get('name')||'未知科目');
+
+        const res=await $get('/api/exam/rand?examId='+examId);
+        if(res.code!==200){document.getElementById('examArea').innerHTML=`<div class="alert alert-danger">${res.msg||'加载失败'}</div>`;return;}
+
+        const questions=res.data.questions||res.data;
+        const maxScore = res.data.maxScore || (questions.length * 25);
+        document.getElementById('examName').innerText=examName + '（总分：' + maxScore + ' 分）';
+
+        deadline=res.data.deadline?+res.data.deadline:Date.now()+10*60*1000;
+        updateTimer();timerInterval=setInterval(updateTimer,1000);
+        let html='';
+        questions.forEach((q,i)=>{
+            const qScore = q.score || 25;
+            html+=`<div class="card question-card shadow-sm">
+                <div class="card-header">第${i+1}题：${q.title} <span class="badge bg-light text-dark float-end">${qScore} 分</span></div>
+                <div class="card-body">
+                    ${['A','B','C','D'].map(opt=>`
+                        <label class="option-label mb-2">
+                            <input type="radio" name="answer_${q.questionId}" value="${opt}">
+                            <b>${opt}.</b> ${q['option'+opt]}
+                        </label>`).join('')}
+                </div>
+            </div>`;
+        });
+        document.getElementById('examArea').innerHTML=html;
+        document.getElementById('examForm').addEventListener('submit',async e=>{e.preventDefault();await doSubmit();});
+    })();
+
+    function updateTimer(){
+        const s=Math.max(0,Math.floor((deadline-Date.now())/1000));
+        const t=document.getElementById('timer');
+        t.innerText='剩余时间：'+String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+        if(s<=60)t.classList.add('warning');
+        if(s<=0){clearInterval(timerInterval);t.innerText='⏰ 考试时间到！自动交卷中...';doSubmit();}
+    }
+
+    async function doSubmit(){
+        if(timerInterval)clearInterval(timerInterval);
+        const f=document.getElementById('examForm');if(!f)return;
+        const data=Object.fromEntries(new FormData(f));
+        const result=await $post('/api/exam/submit',data);
+        const details=result.data||[];
+        let html=`<div class="card shadow-sm"><div class="card-header text-center"><h4>${result.msg}</h4></div><div class="card-body">
+            <table class="table table-bordered table-hover"><thead><tr><th>题号</th><th>题目</th><th>你的答案</th><th>正确答案</th><th>结果</th><th>得分</th></tr></thead><tbody>`;
+        let totalScore=0,maxScore=0,questionCount=0;
+        details.forEach(d=>{if(d.totalScore!==undefined){totalScore=d.totalScore;maxScore=d.maxScore||questionCount*25;questionCount=d.questionCount;return;};html+=`<tr class="${d.isCorrect?'table-success':'table-danger'}"><td>${d.questionId}</td><td>${d.title}</td><td>${d.userAnswer}</td><td>${d.correctAnswer}</td><td>${d.isCorrect?'✓ 正确':'✗ 错误'}</td><td>${d.score} / ${d.maxScore||25}</td></tr>`;});
+        html+=`</tbody><tfoot><tr class="table-active fw-bold fs-5"><td colspan="4" class="text-end">总分：</td><td colspan="2">${totalScore} / ${maxScore}</td></tr></tfoot></table></div></div>`;
+        document.getElementById('scoreResult').innerHTML=html;document.getElementById('submitBtn').disabled=true;f.style.opacity='.6';f.style.pointerEvents='none';
+    }
+    </script>
+</body>
+</html>

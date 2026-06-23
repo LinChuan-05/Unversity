@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>用户查询</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f0f2f5; padding:24px; }
+        .table-card { border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+        .table-card thead { background:linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color:#fff; }
+        .table-card tbody tr { transition:background .15s; }
+        .table-card tbody tr:hover { background:#e8f4fd; }
+        .btn-icon { width:32px;height:32px;padding:0;line-height:32px;border-radius:8px;font-size:14px; }
+        .user-avatar { width:36px;height:36px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+                       background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;font-weight:700;font-size:14px; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width:1100px">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold text-secondary">👥 用户列表</h5>
+            <span class="text-muted small" id="userCount"></span>
+        </div>
+        <div class="table-card">
+            <table class="table table-borderless align-middle mb-0">
+                <thead><tr><th style="width:60px">头像</th><th>姓名</th><th>性别</th><th>邮箱</th><th style="width:80px">角色</th><th id="opCol" style="width:80px">操作</th></tr></thead>
+                <tbody id="userTable"></tbody>
+            </table>
+        </div>
+        <div id="emptyMsg" class="text-center py-5 text-muted d-none">
+            <h1>📭</h1><p>暂无用户数据</p>
+        </div>
+        <div id="msg" class="text-center text-danger mt-3 small"></div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    let currentUser=null;
+    (async()=>{
+        const u=await $get('/api/currentUser');if(u.code===200)currentUser=u.data;
+        const res=await $get('/api/user/find');
+        if(res.code===200&&res.data){
+            if(!res.data.length){document.getElementById('emptyMsg').classList.remove('d-none');return;}
+            document.getElementById('userCount').innerText=`共 ${res.data.length} 人`;
+            let html='';
+            res.data.forEach(user=>{
+                const initial=user.userName.charAt(0).toUpperCase();
+                html+=`<tr>
+                    <td><span class="user-avatar">${initial}</span></td>
+                    <td><b>${user.userName}</b></td>
+                    <td><span class="badge bg-light text-dark">${user.sex}</span></td>
+                    <td class="text-muted small">${user.email}</td>
+                    <td><span class="badge ${user.role==='admin'?'bg-danger':'bg-success'} rounded-pill">${user.role}</span></td>`;
+                if(currentUser&&currentUser.role==='admin')html+=`<td><button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="del(${user.userId})">删除</button></td>`;
+                html+='</tr>';
+            });
+            document.getElementById('userTable').innerHTML=html;
+        }
+        if(!currentUser||currentUser.role!=='admin')document.getElementById('opCol').style.display='none';
+    })();
+    async function del(userId){
+        if(!confirm('确认删除该用户？'))return;
+        const res=await $del('/api/user/delete',{userId});
+        document.getElementById('msg').innerText=res.msg;
+        if(res.code===200)setTimeout(()=>location.reload(),800);
+    }
+    </script>
+</body>
+</html>

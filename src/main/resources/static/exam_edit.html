@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>编辑科目</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-4">
+    <div class="container">
+        <div class="card shadow-sm mx-auto" style="max-width:500px">
+            <div class="card-header bg-warning"><h5 class="mb-0">编辑科目</h5></div>
+            <div class="card-body">
+                <form id="editForm">
+                    <input type="hidden" name="examId" id="examId">
+                    <div class="mb-3"><label class="form-label">科目名称</label><input class="form-control" name="name" id="name" required></div>
+                    <div class="mb-3"><label class="form-label">考试时长(分)</label><input class="form-control" name="duration" id="duration" type="number" min="1" max="180" required></div>
+                    <div class="mb-3"><label class="form-label">可考次数</label><input class="form-control" name="maxAttempts" id="maxAttempts" type="number" min="1" max="99" required></div>
+                    <div class="mb-3"><label class="form-label">说明</label><input class="form-control" name="description" id="description"></div>
+                    <button type="submit" class="btn btn-warning w-100">保存</button>
+                </form>
+                <div id="msg" class="text-danger text-center mt-3"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    (async()=>{
+        const examId=new URLSearchParams(location.search).get('examId');
+        const res=await $get('/api/examManage/'+examId);
+        if(res.code===200&&res.data){
+            document.getElementById('examId').value=res.data.examId;document.getElementById('name').value=res.data.name;
+            document.getElementById('duration').value=res.data.duration;document.getElementById('maxAttempts').value=res.data.maxAttempts||1;
+            document.getElementById('description').value=res.data.description||'';
+        }
+        document.getElementById('editForm').addEventListener('submit',async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target));const r=await $put('/api/examManage/update',data);document.getElementById('msg').innerText=r.msg;});
+    })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>重考管理</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f0f2f5; padding:24px; }
+        .table-card { border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+        .table-card thead { background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff; }
+        .table-card tbody tr { transition:background .15s; }
+        .table-card tbody tr:hover { background:#e8f4fd; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width:1100px;">
+        <h5 class="fw-bold text-secondary mb-3">🔄 重考管理</h5>
+        <div id="requestArea">加载中...</div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    loadRequests();
+    async function loadRequests(){
+        const res=await $get('/api/exam/allRequests');
+        if(res.code!==200||!res.data||!res.data.length){
+            document.getElementById('requestArea').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无重考申请</p></div>';
+            return;
+        }
+        const requests=res.data;
+        const statusMap={pending:['bg-warning text-dark','等待审批'],approved:['bg-success','已批准'],rejected:['bg-danger','已拒绝']};
+        let html='<div class="table-card"><table class="table table-borderless align-middle mb-0"><thead><tr><th>申请时间</th><th>学生</th><th>科目</th><th>得分</th><th>理由</th><th>状态</th><th style="width:180px">操作</th></tr></thead><tbody>';
+        requests.forEach(r=>{
+            const [cls,txt]=statusMap[r.status]||['bg-secondary',r.status];
+            html+=`<tr>
+                <td class="text-muted small">${(r.createdAt||'').substring(0,19)}</td>
+                <td><b>${r.userName}</b></td><td>${r.examName}</td><td>${r.score} 分</td>
+                <td class="text-muted small">${r.reason||'-'}</td>
+                <td><span class="badge ${cls} rounded-pill px-3 py-2">${txt}</span></td>
+                <td>${r.status==='pending'
+                    ?`<div class="d-flex gap-1">
+                        <button class="btn btn-success btn-sm rounded-pill px-3" onclick="approve(${r.requestId},${r.userId},${r.examId})">✓ 批准</button>
+                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="reject(${r.requestId})">✗ 拒绝</button>
+                    </div>`
+                    :'<span class="text-muted small">-</span>'}
+            </td></tr>`;
+        });
+        html+='</tbody></table></div>';
+        document.getElementById('requestArea').innerHTML=html;
+    }
+
+    async function approve(requestId,userId,examId){
+        if(!confirm('确认批准该重考申请？将清除该学生在本科目的所有答题记录。'))return;
+        const res=await $post('/api/exam/approveReset',{requestId,userId,examId});
+        if(res.code===200){loadRequests();}else alert(res.msg);
+    }
+
+    async function reject(requestId){
+        if(!confirm('确认拒绝该重考申请？'))return;
+        const res=await $post('/api/exam/rejectReset',{requestId});
+        if(res.code===200){loadRequests();}else alert(res.msg);
+    }
+    </script>
+</body>
+</html>

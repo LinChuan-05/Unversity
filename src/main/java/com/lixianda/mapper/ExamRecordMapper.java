@@ -1,0 +1,53 @@
+package com.lixianda.mapper;
+
+import com.lixianda.entity.ExamRecord;
+import org.apache.ibatis.annotations.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Mapper
+public interface ExamRecordMapper {
+
+    @Select("SELECT COUNT(DISTINCT examTime) FROM exam_record WHERE userId=#{userId} AND examId=#{examId}")
+    int countAttempts(@Param("userId") Integer userId, @Param("examId") Integer examId);
+
+    @Insert("INSERT INTO exam_record(userId, questionId, userAnswer, isCorrect, score, examId) VALUES(#{userId}, #{questionId}, #{userAnswer}, #{isCorrect}, #{score}, #{examId})")
+    @Options(useGeneratedKeys = true, keyProperty = "recordId")
+    int insert(ExamRecord record);
+
+    @Select("SELECT * FROM exam_record WHERE userId = #{userId} ORDER BY examTime DESC")
+    List<ExamRecord> findByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT e.*, q.title, q.answer as correctAnswer " +
+            "FROM exam_record e LEFT JOIN question q ON e.questionId = q.questionId " +
+            "WHERE e.userId = #{userId} ORDER BY e.examTime DESC")
+    List<Map<String, Object>> findDetailByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT userId, SUM(score) as totalScore, COUNT(*) as questionCount, MAX(examTime) as lastExamTime " +
+            "FROM exam_record GROUP BY userId ORDER BY lastExamTime DESC")
+    List<Map<String, Object>> findAllUserScores();
+
+    /** 学生个人成绩汇总：按考试场次分组 */
+    @Select("SELECT er.examTime, er.examId, ex.name as examName, SUM(er.score) as totalScore, " +
+            "COUNT(*) as questionCount, MAX(ex.duration) as duration " +
+            "FROM exam_record er LEFT JOIN exam ex ON er.examId = ex.examId " +
+            "WHERE er.userId = #{userId} " +
+            "GROUP BY er.examTime, er.examId, ex.name " +
+            "ORDER BY er.examTime DESC")
+    List<Map<String, Object>> findSummaryByUserId(@Param("userId") Integer userId);
+
+    /** 管理员：查看所有学生的考试状态汇总 */
+    @Select("SELECT u.userId, u.userName, ex.examId, ex.name as examName, ex.maxAttempts, " +
+            "COUNT(DISTINCT er.examTime) as taken, MAX(er.examTime) as lastExamTime " +
+            "FROM users u CROSS JOIN exam ex " +
+            "LEFT JOIN exam_record er ON er.userId = u.userId AND er.examId = ex.examId " +
+            "WHERE u.role = 'student' " +
+            "GROUP BY u.userId, u.userName, ex.examId, ex.name, ex.maxAttempts " +
+            "ORDER BY u.userName, ex.name")
+    List<Map<String, Object>> findAllStudentExamStatus();
+
+    /** 管理员：清除某个学生对某科目的所有考试记录（允许重考） */
+    @Delete("DELETE FROM exam_record WHERE userId = #{userId} AND examId = #{examId}")
+    int deleteByUserIdAndExamId(@Param("userId") Integer userId, @Param("examId") Integer examId);
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>编辑试题</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-4">
+    <div class="container">
+        <div class="card shadow-sm mx-auto" style="max-width:600px">
+            <div class="card-header bg-warning"><h5 class="mb-0">编辑试题</h5></div>
+            <div class="card-body">
+                <form id="qForm">
+                    <input type="hidden" name="questionId" id="qId">
+                    <div class="mb-3"><label class="form-label">题目编号</label><input type="text" class="form-control" id="qIdShow" readOnly></div>
+                    <div class="mb-3"><label class="form-label">所属科目</label><select class="form-select" name="examId" id="examSelect"><option value="">加载中...</option></select></div>
+                    <div class="mb-3"><label class="form-label">题目</label><input type="text" class="form-control" name="title" id="title" required></div>
+                    <div class="row g-2">
+                        <div class="col-6"><label class="form-label">A</label><input type="text" class="form-control" name="optionA" id="optionA" required></div>
+                        <div class="col-6"><label class="form-label">B</label><input type="text" class="form-control" name="optionB" id="optionB" required></div>
+                        <div class="col-6"><label class="form-label">C</label><input type="text" class="form-control" name="optionC" id="optionC" required></div>
+                        <div class="col-6"><label class="form-label">D</label><input type="text" class="form-control" name="optionD" id="optionD" required></div>
+                    </div>
+                    <div class="mb-3 mt-3"><label class="form-label">正确答案</label><div id="answerRadios"></div></div>
+                    <div class="mb-3"><label class="form-label">分值</label><input type="number" class="form-control" name="score" id="score" value="25" min="1" max="100" style="width:100px" required></div>
+                    <button type="submit" class="btn btn-warning w-100">更新试题</button>
+                </form>
+                <div id="msg" class="text-danger text-center mt-3"></div>
+            </div>
+        </div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    (async()=>{
+        const questionId=new URLSearchParams(location.search).get('questionId');
+        if(!questionId){document.getElementById('msg').innerText='缺少试题编号';return;}
+        const [qRes,examsRes]=await Promise.all([$get('/api/question/findById?questionId='+questionId),$get('/api/exam/subjects')]);
+        if(qRes.code!==200){document.getElementById('msg').innerText=qRes.msg;return;}
+        const q=qRes.data;
+        document.getElementById('qId').value=q.questionId;document.getElementById('qIdShow').value=q.questionId;
+        document.getElementById('title').value=q.title;document.getElementById('optionA').value=q.optionA;
+        document.getElementById('optionB').value=q.optionB;document.getElementById('optionC').value=q.optionC;
+        document.getElementById('optionD').value=q.optionD;
+        document.getElementById('score').value=q.score||25;
+        const sel=document.getElementById('examSelect');sel.innerHTML='';
+        if(examsRes.code===200&&examsRes.data)examsRes.data.forEach(e=>{sel.innerHTML+=`<option value="${e.examId}" ${q.examId==e.examId?'selected':''}>${e.name}</option>`;});
+        let rhtml='';['A','B','C','D'].forEach(opt=>{rhtml+=`<div class="form-check form-check-inline"><input class="form-check-input" type="radio" name="answer" value="${opt}" ${q.answer===opt?'checked':''}><label class="form-check-label">${opt}</label></div>`;});
+        document.getElementById('answerRadios').innerHTML=rhtml;
+    })();
+    document.getElementById('qForm').addEventListener('submit',async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target));const res=await $put('/api/question/update',data);document.getElementById('msg').innerText=res.msg;});
+    </script>
+</body>
+</html>

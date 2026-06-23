@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>成绩查询</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f0f2f5; padding:24px; }
+        .table-card { border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.08); }
+        .table-card thead { background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff; }
+        .table-card tbody tr { transition:background .15s; }
+        .table-card tbody tr:hover { background:#e8f4fd; }
+        .score-ring { width:48px;height:48px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+                      font-weight:700;font-size:16px; }
+        .score-high { background:#d4edda;color:#155724; }
+        .score-mid  { background:#fff3cd;color:#856404; }
+        .score-low  { background:#f8d7da;color:#721c24; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width:1000px;">
+        <ul class="nav nav-tabs mb-3" id="tabNav">
+            <li class="nav-item"><a class="nav-link active" href="#" data-tab="history">考试成绩</a></li>
+            <li class="nav-item"><a class="nav-link" href="#" data-tab="requests">重考申请记录</a></li>
+        </ul>
+
+        <div id="tabHistory">
+            <div id="historyArea" class="text-center">加载中...</div>
+        </div>
+        <div id="tabRequests" class="d-none">
+            <div id="requestsArea" class="text-center">加载中...</div>
+        </div>
+
+        <!-- 申请弹窗 -->
+        <div class="modal fade" id="applyModal" tabindex="-1">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header bg-warning"><h5 class="modal-title">申请重考</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p>科目：<b id="applyExamName"></b>，本次得分：<b id="applyScore"></b></p>
+                    <label class="form-label">申请理由</label>
+                    <textarea class="form-control" id="applyReason" rows="3" placeholder="请简述申请重考的原因..."></textarea>
+                    <input type="hidden" id="applyExamId">
+                </div>
+                <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">取消</button><button class="btn btn-warning" id="applySubmit">提交申请</button></div>
+            </div></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    let pendingRequests = [];
+
+    (async()=>{
+        document.querySelectorAll('#tabNav a').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();
+            document.querySelectorAll('#tabNav a').forEach(x=>x.classList.remove('active'));a.classList.add('active');
+            document.getElementById('tabHistory').classList.toggle('d-none',a.dataset.tab!=='history');
+            document.getElementById('tabRequests').classList.toggle('d-none',a.dataset.tab!=='requests');
+            if(a.dataset.tab==='requests')loadRequests();
+        }));
+        loadHistory();
+        document.getElementById('applySubmit').addEventListener('click',doApply);
+    })();
+
+    async function loadHistory(){
+        const res=await $get('/api/exam/history');
+        const [myReq] = await Promise.all([$get('/api/exam/myRequests')]);
+        pendingRequests = (myReq.code===200&&myReq.data) ? myReq.data.filter(r=>r.status==='pending').map(r=>r.examId) : [];
+
+        if(res.code!==200){document.getElementById('historyArea').innerHTML=`<div class="alert alert-danger">${res.msg||'加载失败'}</div>`;return;}
+        const records=res.data||[];
+        if(!records.length){document.getElementById('historyArea').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无考试记录</p></div>';return;}
+        let html='<div class="table-card"><table class="table table-borderless align-middle mb-0"><thead><tr><th>考试时间</th><th>科目</th><th>时长</th><th class="text-center">得分</th><th class="text-center">结果</th><th style="width:100px">操作</th></tr></thead><tbody>';
+        records.forEach(r=>{
+            const total=r.totalScore||0;
+            const pct=total>=60?75:40; // 简化为合格线判断
+            const cls=pct>=80?'score-high':pct>=60?'score-mid':'score-low';
+            const pass=total>=60;
+            const examId=r.examId;
+            const alreadyPending=pendingRequests.includes(examId);
+            html+=`<tr>
+                <td class="text-muted small">${(r.examTime||'').substring(0,19)}</td><td><b>${r.examName||'-'}</b></td>
+                <td class="text-muted">${r.duration||'-'} 分钟</td>
+                <td class="text-center"><span class="score-ring ${cls}">${total}</span></td>
+                <td class="text-center"><span class="badge ${pass?'bg-success':'bg-danger'} rounded-pill px-3 py-2">${pass?'✓ 合格':'✗ 不合格'}</span></td>
+                <td>${alreadyPending
+                    ?'<span class="badge bg-info">审核中</span>'
+                    :`<button class="btn btn-outline-warning btn-sm rounded-pill px-3" onclick="openApply(${examId},${total},'${r.examName}')">申请重考</button>`}</td></tr>`;
+        });
+        html+='</tbody></table></div>';document.getElementById('historyArea').innerHTML=html;
+    }
+
+    async function loadRequests(){
+        const res=await $get('/api/exam/myRequests');
+        const requests=res.data||[];
+        if(!requests.length){document.getElementById('requestsArea').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无重考申请</p></div>';return;}
+        const statusMap={pending:['bg-warning text-dark','等待审批'],approved:['bg-success','已批准'],rejected:['bg-danger','已拒绝']};
+        let html='<div class="table-card"><table class="table table-borderless align-middle mb-0"><thead><tr><th>申请时间</th><th>科目</th><th>得分</th><th>理由</th><th>状态</th></tr></thead><tbody>';
+        requests.forEach(r=>{
+            const [cls,txt]=statusMap[r.status]||['bg-secondary',r.status];
+            html+=`<tr><td class="text-muted small">${(r.createdAt||'').substring(0,19)}</td><td><b>${r.examName||r.examId}</b></td><td>${r.score}</td><td>${r.reason||'-'}</td><td><span class="badge ${cls} rounded-pill px-3 py-2">${txt}</span></td></tr>`;
+        });
+        html+='</tbody></table></div>';document.getElementById('requestsArea').innerHTML=html;
+    }
+
+    function openApply(examId,score,examName){
+        document.getElementById('applyExamId').value=examId;
+        document.getElementById('applyExamName').innerText=examName;
+        document.getElementById('applyScore').innerText=score+' 分';
+        document.getElementById('applyReason').value='';
+        new bootstrap.Modal(document.getElementById('applyModal')).show();
+    }
+
+    async function doApply(){
+        try {
+            const examId=document.getElementById('applyExamId').value;
+            const reason=document.getElementById('applyReason').value;
+            if(!examId){alert('请选择科目');return;}
+            const res=await $post('/api/exam/requestReset',{examId,reason});
+            bootstrap.Modal.getInstance(document.getElementById('applyModal')).hide();
+            if(res.code===200){alert('申请已提交！');loadHistory();}
+            else alert(res.msg||'提交失败，请检查网络连接');
+        } catch(e) {
+            alert('请求失败：服务器可能未重启，请在 IDEA 中重新 Run。\n错误：'+e.message);
+        }
+    }
+    </script>
+</body>
+</html>

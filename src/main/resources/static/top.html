@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>top</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        html, body { margin:0; padding:0; height:100%; }
+        .topbar {
+            height:100%; display:flex; align-items:center; justify-content:space-between;
+            padding:0 24px;
+            background: linear-gradient(135deg, #4a6cf7 0%, #6c3ce0 100%);
+            box-shadow: 0 2px 20px rgba(106,60,230,.25);
+            position:relative; z-index:10;
+        }
+        .topbar::after {
+            content:''; position:absolute; bottom:-4px; left:0; right:0; height:4px;
+            background: linear-gradient(90deg, #4a6cf7, #6c3ce0, #ff6b6b, #feca57);
+        }
+        .topbar .brand { color:#fff; font-size:20px; font-weight:700; letter-spacing:.5px; }
+        .topbar .user-area { color:rgba(255,255,255,.9); font-size:13px; }
+        .topbar .user-area a { color:#ffd93d; text-decoration:none; font-weight:600; }
+        .topbar .user-area a:hover { color:#fff; }
+    </style>
+</head>
+<body>
+    <div class="topbar">
+        <span class="brand">🏫 University 在线考试管理系统</span>
+        <span class="user-area" id="userInfo">加载中...</span>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    (async()=>{
+        const res=await $get('/api/currentUser');
+        if(res.code===200&&res.data){
+            document.getElementById('userInfo').innerHTML=
+                '👤 '+res.data.userName+' <span style="opacity:.6">('+res.data.role+')</span> | '+
+                '<a href="#" onclick="logout()">退出</a>';
+        }
+    })();
+    async function logout(){await $post('/api/logout',{});window.top.location.href='/myWeb/login.html';}
+    </script>
+</body>
+</html>

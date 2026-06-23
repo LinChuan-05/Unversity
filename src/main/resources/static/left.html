@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>菜单</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcdn.net/ajax/libs/bootstrap-icons/1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); margin:0; padding:0; min-height:100vh; color:#c8d6e5; }
+        .sidebar { list-style:none; padding:0; margin:0; }
+        .sidebar .menu-group { border-bottom:1px solid rgba(255,255,255,.07); }
+        .sidebar .menu-title { padding:12px 16px 8px; font-size:11px; text-transform:uppercase; letter-spacing:1.5px; color:#6c7a89; font-weight:700; }
+        .sidebar .menu-item { display:block; padding:10px 20px; color:#c8d6e5; text-decoration:none; font-size:14px; transition:all .2s; border-left:3px solid transparent; }
+        .sidebar .menu-item:hover { background:rgba(255,255,255,.06); color:#fff; border-left-color:#667eea; }
+        .sidebar .menu-item i { margin-right:8px; width:18px; text-align:center; }
+    </style>
+</head>
+<body>
+    <div id="sidebar"></div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>loadSidebar();</script>
+</body>
+</html>
