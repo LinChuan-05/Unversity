@@ -20,7 +20,6 @@
         .group-header:hover { background:#f8f9fa; }
         .group-header .arrow { transition:transform .3s; font-size:12px; }
         .group-header.collapsed .arrow { transform:rotate(-90deg); }
-        .no-score { opacity:.5; }
     </style>
 </head>
 <body>
@@ -36,96 +35,98 @@
     <script>
     let isAdmin=false, allQuestions=[], examsMap={};
 
-    (async()=>{
-        const [u,examsRes,allQRes] = await Promise.all([
-            $get('/api/currentUser'),
-            $get('/api/exam/subjects'),
-            $get('/api/question/find')
-        ]);
-        if(u.code===200&&u.data&&u.data.role==='admin')isAdmin=true;
-        allQuestions = (allQRes.code===200&&allQRes.data) ? allQRes.data : [];
-        // 建科目名称映射
-        examsMap = {};
-        if(examsRes.code===200&&examsRes.data) examsRes.data.forEach(e=>{examsMap[e.examId]=e.name;});
-        renderGroups();
-    })();
-
     function groupByExam(questions){
-        const groups = {};
-        questions.forEach(q => {
-            const eid = q.examId || 0;
+        var groups = {};
+        for(var i=0;i<questions.length;i++){
+            var q = questions[i];
+            var eid = q.examId || 0;
             if(!groups[eid]) groups[eid] = [];
             groups[eid].push(q);
-        });
+        }
         return groups;
     }
 
     function renderGroups(){
-        const groups = groupByExam(allQuestions);
-        const examIds = Object.keys(groups);
-        if(!examIds.length){document.getElementById('examGroups').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无试题</p></div>';return;}
-
-        let totalCount = 0;
-        let html = '';
-        examIds.forEach((eid,i)=>{
-            const qs = groups[eid];
+        var groups = groupByExam(allQuestions);
+        var examIds = Object.keys(groups);
+        if(!examIds.length){
+            document.getElementById('examGroups').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无试题</p></div>';
+            return;
+        }
+        var totalCount = 0;
+        var html = '';
+        for(var i=0;i<examIds.length;i++){
+            var eid = examIds[i];
+            var qs = groups[eid];
             totalCount += qs.length;
-            const examName = examsMap[eid] || '未分类';
-            const totalScore = qs.reduce((s,q)=>s+(q.score||25), 0);
-            const collapsed = i > 0 ? 'collapsed' : ''; // 第一个展开，其余折叠
-            const show = i === 0 ? '' : 'd-none';
-
-            html += `<div class="table-card">
-                <div class="group-header ${collapsed}" data-toggle="${eid}" onclick="toggleGroup(this)">
-                    <span><b>📖 ${examName}</b> <span class="badge bg-primary ms-2">${qs.length} 题</span></span>
-                    <span>
-                        <span class="text-muted small me-3">总分：${totalScore} 分</span>
-                        <span class="arrow">▼</span>
-                    </span>
-                </div>
-                <div id="group_${eid}" class="${show}">
-                    <table class="table table-borderless align-middle mb-0">
-                        <thead><tr><th>#</th><th>题目</th><th class="text-center">A</th><th class="text-center">B</th><th class="text-center">C</th><th class="text-center">D</th>`;
-            if(isAdmin)html+=`<th class="text-center">答案</th><th class="text-center">分值</th><th>操作</th>`;
-            html+=`</tr></thead><tbody>`;
-            qs.forEach((q,idx)=>{
-                html+=`<tr><td class="text-muted small">${idx+1}</td>
-                    <td><span class="q-title fw-semibold" title="${q.title}">${q.title}</span></td>
-                    <td class="text-center"><span class="opt-text" title="${q.optionA}">${q.optionA}</span></td>
-                    <td class="text-center"><span class="opt-text" title="${q.optionB}">${q.optionB}</span></td>
-                    <td class="text-center"><span class="opt-text" title="${q.optionC}">${q.optionC}</span></td>
-                    <td class="text-center"><span class="opt-text" title="${q.optionD}">${q.optionD}</span></td>`;
-                if(isAdmin)html+=`<td class="text-center"><span class="answer-badge">${q.answer}</span></td>
-                    <td class="text-center"><b>${q.score||25}</b></td>
-                    <td><div class="d-flex gap-1">
-                        <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="del(${q.questionId})">删除</button>
-                        <a href="/myWeb/question_update.html?questionId=${q.questionId}" target="right" class="btn btn-outline-warning btn-sm rounded-pill px-3">编辑</a>
-                    </div></td>`;
-                html+='</tr>';
-            });
-            html+=`</tbody></table></div></div>`;
-        });
-        document.getElementById('qCount').innerText=`共 ${examIds.length} 个科目，${totalCount} 道题`;
+            var examName = examsMap[eid] || '未分类';
+            var totalScore = 0;
+            for(var s=0;s<qs.length;s++){ totalScore += (qs[s].score||25); }
+            var collapsed = i > 0 ? 'collapsed' : '';
+            var show = i === 0 ? '' : 'd-none';
+            html += '<div class="table-card">';
+            html += '<div class="group-header '+collapsed+'" data-toggle="'+eid+'" onclick="toggleGroup(this)">';
+            html += '<span><b>📖 '+examName+'</b> <span class="badge bg-primary ms-2">'+qs.length+' 题</span></span>';
+            html += '<span><span class="text-muted small me-3">总分：'+totalScore+' 分</span><span class="arrow">▼</span></span>';
+            html += '</div>';
+            html += '<div id="group_'+eid+'" class="'+show+'">';
+            html += '<table class="table table-borderless align-middle mb-0">';
+            html += '<thead><tr><th>#</th><th>题目</th><th class="text-center">A</th><th class="text-center">B</th><th class="text-center">C</th><th class="text-center">D</th>';
+            if(isAdmin) html += '<th class="text-center">答案</th><th class="text-center">分值</th><th>操作</th>';
+            html += '</tr></thead><tbody>';
+            for(var j=0;j<qs.length;j++){
+                var q = qs[j];
+                var num = j + 1;
+                html += '<tr><td class="text-muted small">'+num+'</td>';
+                html += '<td><span class="q-title fw-semibold" title="'+q.title+'">'+q.title+'</span></td>';
+                html += '<td class="text-center"><span class="opt-text" title="'+q.optionA+'">'+q.optionA+'</span></td>';
+                html += '<td class="text-center"><span class="opt-text" title="'+q.optionB+'">'+q.optionB+'</span></td>';
+                html += '<td class="text-center"><span class="opt-text" title="'+q.optionC+'">'+q.optionC+'</span></td>';
+                html += '<td class="text-center"><span class="opt-text" title="'+q.optionD+'">'+q.optionD+'</span></td>';
+                if(isAdmin){
+                    html += '<td class="text-center"><span class="answer-badge">'+q.answer+'</span></td>';
+                    html += '<td class="text-center"><b>'+(q.score||25)+'</b></td>';
+                    html += '<td><div class="d-flex gap-1">';
+                    html += '<button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="del('+q.questionId+')">删除</button>';
+                    html += '<a href="/myWeb/question_update.html?questionId='+q.questionId+'" target="right" class="btn btn-outline-warning btn-sm rounded-pill px-3">编辑</a>';
+                    html += '</div></td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table></div></div>';
+        }
+        document.getElementById('qCount').innerText = '共 '+examIds.length+' 个科目，'+totalCount+' 道题';
         document.getElementById('examGroups').innerHTML = html;
     }
 
     function toggleGroup(el){
-        const eid = el.dataset.toggle;
-        const body = document.getElementById('group_'+eid);
+        var eid = el.getAttribute('data-toggle');
+        var body = document.getElementById('group_'+eid);
         el.classList.toggle('collapsed');
         body.classList.toggle('d-none');
     }
 
-    async function del(questionId){
-        if(!confirm('确认删除？'))return;
-        const r=await $del('/api/question/delete',{questionId});
-        document.getElementById('msg').innerText=r.msg;
-        if(r.code===200){
-            // 从本地数据移除并重新渲染
-            allQuestions = allQuestions.filter(q=>q.questionId!=questionId);
-            renderGroups();
-        }
+    function del(questionId){
+        if(!confirm('确认删除？')) return;
+        $del('/api/question/delete',{questionId:questionId}).then(function(r){
+            document.getElementById('msg').innerText = r.msg;
+            if(r.code===200){
+                allQuestions = allQuestions.filter(function(q){return q.questionId!=questionId;});
+                renderGroups();
+            }
+        });
     }
+
+    (function init(){
+        Promise.all([$get('/api/currentUser'), $get('/api/exam/subjects'), $get('/api/question/find')]).then(function(results){
+            var u=results[0], examsRes=results[1], allQRes=results[2];
+            if(u.code===200&&u.data&&u.data.role==='admin') isAdmin=true;
+            allQuestions = (allQRes.code===200&&allQRes.data) ? allQRes.data : [];
+            examsMap = {};
+            if(examsRes.code===200&&examsRes.data) examsRes.data.forEach(function(e){examsMap[e.examId]=e.name;});
+            renderGroups();
+        });
+    })();
     </script>
 </body>
 </html>
