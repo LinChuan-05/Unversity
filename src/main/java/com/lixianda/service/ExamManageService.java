@@ -17,6 +17,10 @@ public class ExamManageService {
         return examMapper.findAll();
     }
 
+    public List<Exam> findAllPublished() {
+        return examMapper.findAllPublished();
+    }
+
     public Exam findById(Integer examId) {
         return examMapper.findById(examId);
     }
@@ -31,5 +35,9 @@ public class ExamManageService {
 
     public int delete(Integer examId) {
         return examMapper.deleteById(examId);
+    }
+
+    public int updateStatus(Integer examId, Integer status) {
+        return examMapper.updateStatus(examId, status);
     }
 }

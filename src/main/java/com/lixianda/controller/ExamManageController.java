@@ -44,4 +44,16 @@ public class ExamManageController {
         examManageService.delete(examId);
         return Result.ok("科目已删除");
     }
+
+    @PostMapping("/publish")
+    public Result publish(@RequestParam Integer examId) {
+        examManageService.updateStatus(examId, 1);
+        return Result.ok("科目已发布");
+    }
+
+    @PostMapping("/unpublish")
+    public Result unpublish(@RequestParam Integer examId) {
+        examManageService.updateStatus(examId, 0);
+        return Result.ok("科目已关闭");
+    }
 }

@@ -3,6 +3,7 @@ package com.lixianda.service;
 import com.lixianda.entity.Users;
 import com.lixianda.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
@@ -13,8 +14,24 @@ public class UserService {
     @Autowired
     private UserMapper userMapper;
 
-    public Users login(String userName, String password) {
-        return userMapper.login(userName, password);
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public Users login(String userName, String rawPassword) {
+        Users user = userMapper.login(userName, rawPassword);
+        if (user != null) {
+            // BCrypt 验证
+            if (user.getPassword().length() > 10 && user.getPassword().startsWith("$2")) {
+                return passwordEncoder.matches(rawPassword, user.getPassword()) ? user : null;
+            }
+            // 兼容明文密码（首次迁移）
+            if (rawPassword.equals(user.getPassword())) {
+                // 自动升级为 BCrypt
+                userMapper.updatePassword(user.getUserId(), passwordEncoder.encode(rawPassword));
+                return user;
+            }
+        }
+        return null;
     }
 
     public int register(Users user) {
@@ -22,6 +39,7 @@ public class UserService {
             user.setRole("student");
         }
         if (user.getStatus() == null) user.setStatus(1);
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userMapper.insert(user);
     }
 

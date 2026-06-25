@@ -1,8 +1,10 @@
 package com.lixianda.controller;
 
 import com.lixianda.entity.*;
+import com.lixianda.mapper.ExamErrorQuestionMapper;
 import com.lixianda.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
@@ -26,13 +28,16 @@ public class ExamController {
     private ResetRequestService resetRequestService;
     @Autowired
     private ExamConcurrencyService examConcurrencyService;
+    @Autowired
+    private ExamErrorQuestionMapper examErrorQuestionMapper;
 
-    // 学生端：可用科目列表（含剩余次数）
+    // 可用科目列表：学生只看已发布，管理端看全部
     @GetMapping("/subjects")
     public Result subjects(HttpSession session) {
         Users user = (Users) session.getAttribute("user");
-        List<Exam> exams = examManageService.findAll();
-        if (user != null) {
+        boolean isAdmin = user != null && "admin".equals(user.getRole());
+        List<Exam> exams = isAdmin ? examManageService.findAll() : examManageService.findAllPublished();
+        if (user != null && !isAdmin) {
             List<Map<String, Object>> list = new java.util.ArrayList<>();
             for (Exam e : exams) {
                 int taken = examRecordService.countAttempts(user.getUserId(), e.getExamId());
@@ -43,6 +48,8 @@ public class ExamController {
                 m.put("duration", e.getDuration());
                 m.put("description", e.getDescription());
                 m.put("maxAttempts", e.getMaxAttempts());
+                m.put("questionCount", e.getQuestionCount());
+                m.put("paperStatus", e.getPaperStatus());
                 m.put("taken", taken);
                 m.put("remaining", Math.max(0, remaining));
                 list.add(m);
@@ -119,8 +126,9 @@ public class ExamController {
         return Result.ok("ok", extra);
     }
 
-    // 学生端：提交试卷
+    // 学生端：提交试卷（事务保护 + 错题归档）
     @PostMapping("/submit")
+    @Transactional
     public Result submit(@RequestParam Map<String, String> answers, HttpSession session) {
         @SuppressWarnings("unchecked")
         List<Question> questions = (List<Question>) session.getAttribute("examQuestions");
@@ -147,6 +155,15 @@ public class ExamController {
                 examId
             );
             examRecordService.save(record);
+            // 错题自动归档
+            if ((Integer) detail.get("isCorrect") == 0) {
+                examErrorQuestionMapper.upsert(
+                    user.getUserId(),
+                    (Integer) detail.get("questionId"),
+                    (String) detail.get("userAnswer"),
+                    (String) detail.get("correctAnswer")
+                );
+            }
         }
         session.removeAttribute("examQuestions");
         session.removeAttribute("examDeadline");

@@ -9,6 +9,7 @@ import java.util.Map;
 public interface UserMapper {
 
     @Select("SELECT * FROM users WHERE userName = #{userName} AND status = 1 LIMIT 1")
+    // 密码在 Service 层用 BCrypt 验证
     @Results({
         @Result(property = "userId", column = "userId"),
         @Result(property = "userName", column = "userName"),

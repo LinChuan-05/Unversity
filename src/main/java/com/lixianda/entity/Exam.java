@@ -9,6 +9,9 @@ public class Exam {
     private String description;
     private Integer maxAttempts;
     private Integer questionCount;
+    private Integer paperStatus;
+    private Date startTime;
+    private Date endTime;
     private Date createdAt;
 
     public Integer getExamId() { return examId; }
@@ -23,6 +26,12 @@ public class Exam {
     public void setMaxAttempts(Integer maxAttempts) { this.maxAttempts = maxAttempts; }
     public Integer getQuestionCount() { return questionCount; }
     public void setQuestionCount(Integer questionCount) { this.questionCount = questionCount; }
+    public Integer getPaperStatus() { return paperStatus; }
+    public void setPaperStatus(Integer paperStatus) { this.paperStatus = paperStatus; }
+    public Date getStartTime() { return startTime; }
+    public void setStartTime(Date startTime) { this.startTime = startTime; }
+    public Date getEndTime() { return endTime; }
+    public void setEndTime(Date endTime) { this.endTime = endTime; }
     public Date getCreatedAt() { return createdAt; }
     public void setCreatedAt(Date createdAt) { this.createdAt = createdAt; }
 }

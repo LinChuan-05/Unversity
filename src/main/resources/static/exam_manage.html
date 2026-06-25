@@ -32,7 +32,7 @@
         </div>
         <div class="table-card">
             <table class="table table-borderless align-middle mb-0">
-                <thead><tr><th>#</th><th>科目名称</th><th>⏱ 时长</th><th>📝 抽题</th><th>🔄 限考</th><th>说明</th><th>操作</th></tr></thead>
+                <thead><tr><th>#</th><th>科目名称</th><th>⏱ 时长</th><th>📝 抽题</th><th>🔄 限考</th><th>状态</th><th>操作</th></tr></thead>
                 <tbody id="examTbody"></tbody>
             </table>
         </div>
@@ -54,14 +54,18 @@
             <td><span class="badge bg-info">${e.duration} 分钟</span></td>
             <td><span class="badge bg-primary">抽 ${e.questionCount||4} 题</span></td>
             <td><span class="badge bg-warning text-dark">${e.maxAttempts||1} 次</span></td>
-            <td class="text-muted small">${e.description||'-'}</td>
+            <td>${e.paperStatus===1?'<span class="badge bg-success">已发布</span>':e.paperStatus===0?'<span class="badge bg-secondary">草稿</span>':'<span class="badge bg-dark">已关闭</span>'}</td>
             <td><div class="d-flex gap-1">
-                <button class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="del(${e.examId})">删除</button>
-                <a href="/myWeb/exam_edit.html?examId=${e.examId}" target="right" class="btn btn-outline-warning btn-sm rounded-pill px-3">编辑</a>
+                ${e.paperStatus===1
+                    ?`<button class="btn btn-outline-secondary btn-sm rounded-pill px-2" onclick="pub(${e.examId},0)">下线</button>`
+                    :`<button class="btn btn-outline-success btn-sm rounded-pill px-2" onclick="pub(${e.examId},1)">发布</button>`}
+                <button class="btn btn-outline-danger btn-sm rounded-pill px-2" onclick="del(${e.examId})">删除</button>
+                <a href="/myWeb/exam_edit.html?examId=${e.examId}" target="right" class="btn btn-outline-warning btn-sm rounded-pill px-2">编辑</a>
             </div></td></tr>`;});
         document.getElementById('examTbody').innerHTML=html;
     }
     document.getElementById('addForm').addEventListener('submit',async e=>{e.preventDefault();const data=Object.fromEntries(new FormData(e.target));const res=await $post('/api/examManage/add',data);document.getElementById('msg').innerText=res.msg;if(res.code===200){e.target.reset();loadExams();}});
+    async function pub(examId,status){const res=await $post('/api/examManage/'+(status===1?'publish':'unpublish'),{examId});document.getElementById('msg').innerText=res.msg;loadExams();}
     async function del(examId){if(!confirm('确认删除该科目及其所有试题？'))return;const res=await $del('/api/examManage/delete',{examId});document.getElementById('msg').innerText=res.msg;loadExams();}
     </script>
 </body>
