@@ -11,11 +11,11 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.lixianda</groupId>
-    <artifactId>onlineQuiz</artifactId>
+    <groupId>com.LinChuan</groupId>
+    <artifactId>University</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>onlineQuiz</name>
+    <name>University</name>
     <description>在线考试管理系统 - SpringBoot + MyBatis + MySQL</description>
 
     <properties>
