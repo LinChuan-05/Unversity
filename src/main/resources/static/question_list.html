@@ -14,7 +14,7 @@
         .answer-badge { display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;border-radius:6px;
                         background:#e9ecef;font-weight:700;color:#495057;font-size:13px; }
         .opt-text { font-size:13px;color:#6c757d;max-width:120px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle; }
-        .q-title { max-width:250px; }
+        .q-title { max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle; }
         .group-header { background:#fff; border-radius:12px 12px 0 0; padding:14px 20px; display:flex; align-items:center;
                         justify-content:space-between; cursor:pointer; border-bottom:2px solid #e9ecef; user-select:none; }
         .group-header:hover { background:#f8f9fa; }
@@ -82,7 +82,8 @@
                 var isSub = (q.questionType === 4);
                 html += '<tr><td class="q-num text-muted small"></td>';
                 if(isSub){
-                    html += '<td colspan="5"><span class="fw-semibold">'+q.title+'</span><span class="text-success ms-2 small">[参考答案：'+q.answer+']</span></td>';
+                    html += '<td><span class="fw-semibold">'+q.title+'</span></td>';
+                    html += '<td colspan="4">题型：简答题</td>';
                 }else{
                     html += '<td><span class="q-title fw-semibold" title="'+q.title+'">'+q.title+'</span></td>';
                     html += '<td class="text-center"><span class="opt-text" title="'+q.optionA+'">'+q.optionA+'</span></td>';
