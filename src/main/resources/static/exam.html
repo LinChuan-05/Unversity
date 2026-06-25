@@ -70,7 +70,7 @@
                 <div class="card-header">第${i+1}题：${q.title} <span class="badge ${isSubjective?'bg-warning text-dark':'bg-light text-dark'} float-end">${qScore} 分${isSubjective?' 简答题':''}</span></div>
                 <div class="card-body">`;
             if (isSubjective) {
-                html+=`<textarea class="form-control" name="answer_${q.questionId}" rows="4" placeholder="请输入答案..."></textarea>`;
+                html+=`<textarea class="form-control" name="answer_${q.questionId}" rows="6" placeholder="请输入答案..." style="min-height:150px;font-size:16px;"></textarea>`;
             } else {
                 ['A','B','C','D'].forEach(opt=>{
                     html+=`<label class="option-label mb-2">
