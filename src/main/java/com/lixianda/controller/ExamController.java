@@ -24,6 +24,8 @@ public class ExamController {
     private ExamManageService examManageService;
     @Autowired
     private ResetRequestService resetRequestService;
+    @Autowired
+    private ExamConcurrencyService examConcurrencyService;
 
     // 学生端：可用科目列表（含剩余次数）
     @GetMapping("/subjects")
@@ -94,6 +96,12 @@ public class ExamController {
         }
 
         long deadline = System.currentTimeMillis() + exam.getDuration() * 60L * 1000L;
+
+        // 并发控制：同时在线考试人数不能超过 50 人
+        if (!examConcurrencyService.tryEnter(session.getId(), deadline)) {
+            return Result.fail(429, "当前考试人数已达上限（50人），请稍后再试");
+        }
+
         session.setAttribute("examQuestions", questions);
         session.setAttribute("examDeadline", deadline);
         session.setAttribute("examInfo", exam);
@@ -143,7 +151,15 @@ public class ExamController {
         session.removeAttribute("examDeadline");
         session.removeAttribute("examInfo");
         session.removeAttribute("examExamId");
+        examConcurrencyService.leave(session.getId());
         return Result.ok(scoreService.getResultMessage(totalScore, maxScore), details);
+    }
+
+    /** 获取当前在线考试人数 */
+    @GetMapping("/onlineCount")
+    public Result onlineCount() {
+        int count = examConcurrencyService.getOnlineCount();
+        return Result.ok("ok", count);
     }
 
     /** 学生端：成绩汇总（仅按场次显示，不含逐题详情） */

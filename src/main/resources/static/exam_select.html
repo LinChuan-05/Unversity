@@ -13,13 +13,22 @@
 </head>
 <body>
     <div class="container">
-        <h3 class="text-center mb-4">请选择考试科目</h3>
+        <h3 class="text-center mb-2">请选择考试科目</h3>
+        <p class="text-center text-muted small" id="onlineInfo">加载中...</p>
         <div id="subjectList" class="text-center">加载中...</div>
     </div>
     <script src="/myWeb/js/common.js"></script>
     <script>
     (async()=>{
-        const res=await $get('/api/exam/subjects');
+        const [res, countRes] = await Promise.all([
+            $get('/api/exam/subjects'),
+            $get('/api/exam/onlineCount')
+        ]);
+        if (countRes.code === 200) {
+            const c = countRes.data || 0;
+            document.getElementById('onlineInfo').innerHTML =
+                '当前在线考试人数：<b class="text-' + (c >= 45 ? 'danger' : 'success') + '">' + c + '</b> / 50';
+        }
         if(res.code!==200||!res.data){document.getElementById('subjectList').innerHTML='<div class="alert alert-danger">加载失败</div>';return;}
         let html='<div class="row g-4">';
         res.data.forEach(e=>{
