@@ -5,52 +5,55 @@ import org.apache.ibatis.annotations.*;
 import java.util.List;
 import java.util.Map;
 
-import java.util.List;
-
 @Mapper
 public interface UserMapper {
 
-    @Select("SELECT * FROM users WHERE userName = #{userName} AND password = #{password} LIMIT 1")
+    @Select("SELECT * FROM users WHERE userName = #{userName} AND status = 1 LIMIT 1")
     @Results({
         @Result(property = "userId", column = "userId"),
         @Result(property = "userName", column = "userName"),
         @Result(property = "password", column = "password"),
+        @Result(property = "realName", column = "real_name"),
         @Result(property = "sex", column = "sex"),
         @Result(property = "email", column = "email"),
         @Result(property = "role", column = "role"),
-        @Result(property = "className", column = "className")
+        @Result(property = "phone", column = "phone"),
+        @Result(property = "status", column = "status"),
+        @Result(property = "createTime", column = "create_time"),
+        @Result(property = "classId", column = "class_id")
     })
     Users login(@Param("userName") String userName, @Param("password") String password);
 
-    @Insert("INSERT INTO users(userName, password, sex, email, role, className) VALUES(#{userName}, #{password}, #{sex}, #{email}, #{role}, #{className})")
+    @Insert("INSERT INTO users(userName, password, real_name, sex, email, role, phone, status, class_id) VALUES(#{userName}, #{password}, #{realName}, #{sex}, #{email}, #{role}, #{phone}, 1, #{classId})")
     @Options(useGeneratedKeys = true, keyProperty = "userId")
     int insert(Users user);
 
-    @Select("SELECT * FROM users")
+    @Select("SELECT u.*, c.class_name FROM users u LEFT JOIN sys_class c ON u.class_id = c.class_id WHERE u.role = 'student' ORDER BY u.userId")
     List<Users> findAll();
 
     @Delete("DELETE FROM users WHERE userId = #{userId}")
     int deleteById(@Param("userId") Integer userId);
 
-    // 级联删除：先清除关联数据
     @Delete("DELETE FROM exam_record WHERE userId = #{userId}")
     int deleteRecordsByUserId(@Param("userId") Integer userId);
 
     @Delete("DELETE FROM reset_request WHERE userId = #{userId}")
     int deleteRequestsByUserId(@Param("userId") Integer userId);
 
-    /** 管理员：按班级分组的学生列表 */
-    @Select("SELECT DISTINCT className FROM users WHERE role='student' AND className != '' ORDER BY className")
-    List<String> findAllClasses();
+    @Select("SELECT * FROM sys_class ORDER BY class_id")
+    List<Map<String, Object>> findAllClasses();
 
-    /** 管理员：获取某班级所有学生，含成绩汇总 */
-    @Select("SELECT u.userId, u.userName, u.sex, u.email, u.className, " +
+    @Select("SELECT u.userId, u.userName, u.real_name as realName, u.sex, u.email, c.class_name as className, " +
             "ex.examId, ex.name as examName, " +
             "COALESCE(SUM(er.score), 0) as totalScore, COUNT(er.recordId) as answerCount, MAX(er.examTime) as lastExamTime " +
             "FROM users u CROSS JOIN exam ex " +
             "LEFT JOIN exam_record er ON er.userId = u.userId AND er.examId = ex.examId " +
-            "WHERE u.role = 'student' AND u.className = #{className} " +
-            "GROUP BY u.userId, u.userName, u.sex, u.email, u.className, ex.examId, ex.name " +
+            "LEFT JOIN sys_class c ON u.class_id = c.class_id " +
+            "WHERE u.role = 'student' AND u.class_id = (SELECT class_id FROM sys_class WHERE class_name = #{className} LIMIT 1) " +
+            "GROUP BY u.userId, u.userName, u.real_name, u.sex, u.email, c.class_name, ex.examId, ex.name " +
             "ORDER BY u.userName, ex.name")
     List<Map<String, Object>> findClassStudentsWithScores(@Param("className") String className);
+
+    @Update("UPDATE users SET password = #{password} WHERE userId = #{userId}")
+    int updatePassword(@Param("userId") Integer userId, @Param("password") String password);
 }

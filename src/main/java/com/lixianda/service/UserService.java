@@ -7,8 +7,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 
-import java.util.List;
-
 @Service
 public class UserService {
 
@@ -23,9 +21,7 @@ public class UserService {
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("student");
         }
-        if (user.getClassName() == null) {
-            user.setClassName("");
-        }
+        if (user.getStatus() == null) user.setStatus(1);
         return userMapper.insert(user);
     }
 
@@ -34,10 +30,7 @@ public class UserService {
     }
 
     public int delete(Integer userId, Users currentUser) {
-        if (currentUser != null && currentUser.getUserId().equals(userId)) {
-            return -1;
-        }
-        // 级联删除关联数据
+        if (currentUser != null && currentUser.getUserId().equals(userId)) return -1;
         userMapper.deleteRecordsByUserId(userId);
         userMapper.deleteRequestsByUserId(userId);
         return userMapper.deleteById(userId);
@@ -47,7 +40,7 @@ public class UserService {
         return user != null && "admin".equals(user.getRole());
     }
 
-    public List<String> findAllClasses() {
+    public List<Map<String, Object>> findAllClasses() {
         return userMapper.findAllClasses();
     }
 

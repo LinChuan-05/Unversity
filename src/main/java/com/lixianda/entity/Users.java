@@ -1,14 +1,19 @@
 package com.lixianda.entity;
 
-public class Users {
+import java.util.Date;
 
+public class Users {
     private Integer userId;
     private String userName;
     private String password;
+    private String realName;
     private String sex;
     private String email;
     private String role;
-    private String className;
+    private String phone;
+    private Integer status;
+    private Date createTime;
+    private Integer classId;
 
     public Integer getUserId() { return userId; }
     public void setUserId(Integer userId) { this.userId = userId; }
@@ -16,27 +21,21 @@ public class Users {
     public void setUserName(String userName) { this.userName = userName; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+    public String getRealName() { return realName; }
+    public void setRealName(String realName) { this.realName = realName; }
     public String getSex() { return sex; }
     public void setSex(String sex) { this.sex = sex; }
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
-    public String getClassName() { return className; }
-    public void setClassName(String className) { this.className = className; }
-
+    public String getPhone() { return phone; }
+    public void setPhone(String phone) { this.phone = phone; }
+    public Integer getStatus() { return status; }
+    public void setStatus(Integer status) { this.status = status; }
+    public Date getCreateTime() { return createTime; }
+    public void setCreateTime(Date createTime) { this.createTime = createTime; }
+    public Integer getClassId() { return classId; }
+    public void setClassId(Integer classId) { this.classId = classId; }
     public Users() {}
-
-    public Users(Integer userId, String userName, String password, String sex, String email) {
-        this.userId = userId; this.userName = userName; this.password = password;
-        this.sex = sex; this.email = email;
-    }
-    public Users(Integer userId, String userName, String password, String sex, String email, String role) {
-        this.userId = userId; this.userName = userName; this.password = password;
-        this.sex = sex; this.email = email; this.role = role;
-    }
-    public Users(Integer userId, String userName, String password, String sex, String email, String role, String className) {
-        this.userId = userId; this.userName = userName; this.password = password;
-        this.sex = sex; this.email = email; this.role = role; this.className = className;
-    }
 }
