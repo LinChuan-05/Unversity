@@ -4,6 +4,8 @@ import com.lixianda.entity.Users;
 import com.lixianda.mapper.UserMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.util.List;
+import java.util.Map;
 
 import java.util.List;
 
@@ -20,6 +22,9 @@ public class UserService {
     public int register(Users user) {
         if (user.getRole() == null || user.getRole().isEmpty()) {
             user.setRole("student");
+        }
+        if (user.getClassName() == null) {
+            user.setClassName("");
         }
         return userMapper.insert(user);
     }
@@ -40,5 +45,13 @@ public class UserService {
 
     public boolean isAdmin(Users user) {
         return user != null && "admin".equals(user.getRole());
+    }
+
+    public List<String> findAllClasses() {
+        return userMapper.findAllClasses();
+    }
+
+    public List<Map<String, Object>> findClassStudentsWithScores(String className) {
+        return userMapper.findClassStudentsWithScores(className);
     }
 }

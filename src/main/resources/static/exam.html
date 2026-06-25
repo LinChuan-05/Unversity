@@ -23,6 +23,7 @@
         <div class="text-center mb-4">
             <h3 id="examName">在线考试</h3>
             <div class="timer text-primary" id="timer">加载中...</div>
+            <div class="text-muted small" id="onlineInfo">加载中...</div>
         </div>
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -49,6 +50,13 @@
         if(res.code!==200){document.getElementById('examArea').innerHTML=`<div class="alert alert-danger">${res.msg||'加载失败'}</div>`;return;}
 
         const questions=res.data.questions||res.data;
+        // 显示在线人数
+        const countRes = await $get('/api/exam/onlineCount');
+        if (countRes.code === 200) {
+            const c = countRes.data || 0;
+            document.getElementById('onlineInfo').innerHTML = '当前在线考试人数：<b class="text-' + (c >= 45 ? 'danger' : 'success') + '">' + c + '</b> / 50';
+        }
+
         const maxScore = res.data.maxScore || (questions.length * 25);
         document.getElementById('examName').innerText=examName + '（总分：' + maxScore + ' 分）';
 

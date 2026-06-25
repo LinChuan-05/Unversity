@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>班级管理</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background:#f0f2f5; padding:24px; }
+        .group-card { border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,.08); margin-bottom:20px; }
+        .group-header { background:#fff; padding:14px 20px; display:flex; align-items:center;
+                        justify-content:space-between; cursor:pointer; border-bottom:2px solid #e9ecef; user-select:none; }
+        .group-header:hover { background:#f8f9fa; }
+        .group-header .arrow { transition:transform .3s; font-size:12px; }
+        .group-header.collapsed .arrow { transform:rotate(-90deg); }
+        .table-card { border-radius:0; box-shadow:none; }
+        .table-card thead { background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff; }
+        .table-card tbody tr:hover { background:#e8f4fd; }
+        .score-good { color:#198754; font-weight:700; }
+        .score-bad  { color:#dc3545; font-weight:700; }
+        .score-na   { color:#adb5bd; }
+    </style>
+</head>
+<body>
+    <div class="container-fluid" style="max-width:1200px;">
+        <h5 class="fw-bold text-secondary mb-3">🏫 班级管理</h5>
+        <div id="classArea">加载中...</div>
+    </div>
+    <script src="/myWeb/js/common.js"></script>
+    <script>
+    (async()=>{
+        const res = await $get('/api/user/classes');
+        if(res.code!==200||!res.data||!res.data.length){
+            document.getElementById('classArea').innerHTML='<div class="text-center py-5 text-muted"><h1>📭</h1><p>暂无班级数据，请先在注册时填写班级</p></div>';
+            return;
+        }
+        let html = '';
+        // 并发加载每个班级的学生成绩
+        for (let i = 0; i < res.data.length; i++) {
+            const className = res.data[i];
+            const collapsed = i > 0 ? 'collapsed' : '';
+            const show = i === 0 ? '' : 'd-none';
+            html += `<div class="group-card">
+                <div class="group-header ${collapsed}" onclick="toggleGroup(this,'cls_${i}')">
+                    <span><b>📖 ${className}</b> <span class="badge bg-primary ms-2" id="cnt_${i}">加载中...</span></span>
+                    <span class="arrow">▼</span>
+                </div>
+                <div id="cls_${i}" class="${show}">
+                    <div id="body_${i}" class="text-center py-3 text-muted">加载中...</div>
+                </div>
+            </div>`;
+        }
+        document.getElementById('classArea').innerHTML = html;
+
+        // 异步加载每个班级的详细数据
+        for (let i = 0; i < res.data.length; i++) {
+            loadClassStudents(res.data[i], i);
+        }
+    })();
+
+    async function loadClassStudents(className, idx) {
+        const sRes = await $get('/api/user/classStudents?className=' + encodeURIComponent(className));
+        if (sRes.code !== 200 || !sRes.data) {
+            document.getElementById('body_' + idx).innerHTML = '<div class="text-center py-3 text-danger">加载失败</div>';
+            return;
+        }
+        const data = sRes.data;
+        if (!data.length) {
+            document.getElementById('cnt_' + idx).innerText = '0 人';
+            document.getElementById('body_' + idx).innerHTML = '<div class="text-center py-3 text-muted">暂无学生</div>';
+            return;
+        }
+
+        // 将数据按学生分组
+        const studentMap = {};
+        const examNames = new Set();
+        data.forEach(r => {
+            const uid = r.userId;
+            if (!studentMap[uid]) {
+                studentMap[uid] = { userName: r.userName, sex: r.sex, email: r.email, scores: {} };
+            }
+            if (r.examName) {
+                examNames.add(r.examName);
+                studentMap[uid].scores[r.examName] = { total: r.totalScore || 0, count: r.answerCount || 0, last: r.lastExamTime };
+            }
+        });
+        const examList = [...examNames];
+        const studentCount = Object.keys(studentMap).length;
+        document.getElementById('cnt_' + idx).innerText = studentCount + ' 人';
+
+        let html = '<div class="table-card"><table class="table table-borderless align-middle mb-0"><thead><tr><th>姓名</th><th>性别</th>';
+        examList.forEach(en => { html += '<th class="text-center">' + en + '</th>'; });
+        html += '<th class="text-center">总成绩</th></tr></thead><tbody>';
+
+        Object.values(studentMap).forEach(s => {
+            html += `<tr><td><b>${s.userName}</b></td><td>${s.sex}</td>`;
+            let totalAll = 0;
+            examList.forEach(en => {
+                const sc = s.scores[en];
+                if (sc && sc.count > 0) {
+                    html += `<td class="text-center score-${sc.total >= 60 ? 'good' : 'bad'}">${sc.total} 分</td>`;
+                    totalAll += sc.total;
+                } else {
+                    html += '<td class="text-center score-na">未考</td>';
+                }
+            });
+            html += `<td class="text-center fw-bold">${totalAll} 分</td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        document.getElementById('body_' + idx).innerHTML = html;
+    }
+
+    function toggleGroup(el, id) {
+        el.classList.toggle('collapsed');
+        document.getElementById(id).classList.toggle('d-none');
+    }
+    </script>
+</body>
+</html>

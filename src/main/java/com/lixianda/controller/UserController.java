@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -24,8 +25,9 @@ public class UserController {
 
     @PostMapping("/add")
     public Result add(@RequestParam String userName, @RequestParam String password,
-                      @RequestParam String sex, @RequestParam String email) {
-        Users user = new Users(null, userName, password, sex, email, "student");
+                      @RequestParam String sex, @RequestParam String email,
+                      @RequestParam(defaultValue = "") String className) {
+        Users user = new Users(null, userName, password, sex, email, "student", className);
         int result = userService.register(user);
         if (result == 1) {
             return Result.ok("注册成功");
@@ -43,5 +45,17 @@ public class UserController {
             return Result.fail(400, "不能删除自己");
         }
         return Result.fail(500, "删除失败");
+    }
+
+    /** 管理员：获取班级列表 */
+    @GetMapping("/classes")
+    public Result classes() {
+        return Result.ok("ok", userService.findAllClasses());
+    }
+
+    /** 管理员：获取某班级的学生及成绩 */
+    @GetMapping("/classStudents")
+    public Result classStudents(@RequestParam String className) {
+        return Result.ok("ok", userService.findClassStudentsWithScores(className));
     }
 }

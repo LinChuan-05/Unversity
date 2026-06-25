@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS reset_request (
 -- ============================================
 
 -- 默认管理员
-INSERT IGNORE INTO users (userName, password, sex, email, role) VALUES ('admin', 'admin123', '男', 'admin@test.com', 'admin');
+INSERT IGNORE INTO users (userName, password, sex, email, role, className) VALUES ('admin', 'admin123', '男', 'admin@test.com', 'admin', '管理员');
 
 -- 示例科目
 INSERT IGNORE INTO exam (name, duration, description, maxAttempts) VALUES

@@ -82,6 +82,7 @@ async function loadSidebar() {
         html += `<div class="menu-title">用户管理</div>
             <li class="menu-group"><a href="/myWeb/user_add.html" target="right" class="menu-item"><i class="bi bi-person-plus"></i> 用户注册</a></li>
             <li class="menu-group"><a href="/myWeb/user_list.html" target="right" class="menu-item"><i class="bi bi-people"></i> 用户列表</a></li>
+            <li class="menu-group"><a href="/myWeb/class_list.html" target="right" class="menu-item"><i class="bi bi-diagram-3"></i> 班级管理</a></li>
             <div class="menu-title">考试管理</div>
             <li class="menu-group"><a href="/myWeb/exam_manage.html" target="right" class="menu-item"><i class="bi bi-journals"></i> 科目设置</a></li>
             <li class="menu-group"><a href="/myWeb/reset_exam.html" target="right" class="menu-item"><i class="bi bi-arrow-repeat"></i> 重考管理</a></li>
