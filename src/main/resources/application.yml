@@ -5,7 +5,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/bjpowernode?useUnicode=true&characterEncoding=UTF8&serverTimezone=UTC
+    url: jdbc:mysql://localhost:3306/bjpowernode?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC
     username: root
     password: "050614"
     driver-class-name: com.mysql.cj.jdbc.Driver
